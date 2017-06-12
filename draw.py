@@ -58,6 +58,66 @@ def scanline_convert(polygons, i, screen, zbuffer, color):
         z0 += dz0
         z1 += dz1
 
+def dot_prod ( v1, v2 ):
+    return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2]
+
+def add_vect ( v1, v2 ):
+    return [v1[i] + v2[i] for i in range(3)]
+
+def sub_vect ( v1, v2 ):
+    return [v1[i] - v2[i] for i in range(3)]
+
+def scal ( v1, s ):
+    return [v1[i] * s for i in range(3)]
+
+def magnitude ( v ):
+    return sqrt(sum(component**2 for component in v))
+
+def cross_prod ( v1, v2 ):
+    return [v1[1]*v2[2] - v1[2]*v2[1],
+            v1[2]*v2[0] - v1[0]*v2[2],
+            v1[0]*v2[1] - v1[1]*v2[0]]
+
+def normalize ( v ):
+    mag = magnitude(v)
+    return [component / mag for component in v ]
+
+def light ( matrix, i, k_a, k_d, k_s, normal, properties, color ):
+    N = normal
+    norm = normalize(normal)
+
+    # http://i0.wp.com/in2gpu.com/wp-content/uploads/2014/06/lighting.png
+    for i in range(3):
+        
+        # ambience (I_ambient = A * k_a)
+        ambient = properties['ambient'][i] * k_a[i]
+        color[i] += ambient
+
+        for light in properties['lights']:
+
+            source = properties['lights'][light]['location']
+
+            # diffuse (I_diffuse = L * K_d * max(0, N * L)) <- Lambert's Law
+            # where L is the point light source
+            L = add_vect(source, matrix[i])
+            normL = normalize(L)
+
+            # negative value dot_prod is produced when light source is behind object
+            diffuse = source[i] * k_d[i] * max(0, dot_prod(norm, normL))
+
+            R = sub_vect(scale(normN, dot_prod(normN, normL) * 2), normL)
+            normR = normalize(R)
+            view = [0, 0, 10]
+            V = add_vect(matrix[i], view)
+
+            # specular (I_specular = L * k_s * max(0, R * V))
+            specular = source[i] * k_s[i] * max(0, dot_prod(normR, V)) 
+
+            color += diffuse + specular
+
+    color = [int(min(max(c,0), 255)) for c in color]
+    return color
+
 def add_polygon( polygons, x0, y0, z0, x1, y1, z1, x2, y2, z2 ):
     add_point(polygons, x0, y0, z0);
     add_point(polygons, x1, y1, z1);

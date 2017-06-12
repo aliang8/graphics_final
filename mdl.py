@@ -79,7 +79,7 @@ reserved = {
     "shading" : "SHADING", 
     "phong" : "SHADING_TYPE", 
     "flat" : "SHADING_TYPE", 
-    "ground" : "SHADING_TYPE", 
+    "goroud" : "SHADING_TYPE", 
     "raytrace" : "SHADING_TYPE", 
     "wireframe" : "SHADING_TYPE", 
     "set_knobs" : "SET_KNOBS", 
@@ -254,7 +254,23 @@ def p_statement_rotate(p):
     else:
         commands.append(tuple(p[1:]))
         symbols[p[4]] = ['knob', 0]
-        
+
+def p_statement_ambient(p):
+    """statement: AMBIENT INT INT INT"""
+    symbols['ambient'] = ['ambient'] + p[2:]
+
+def p_statement_constants(p):
+    """statement: CONSTANTS SYMBOL NUMBER NUMBER NUMBER NUMBER NUMBER NUMBER NUMBER NUMBER NUMBER"""
+    symbols[p[2]] = ['constants', {'red': p[3:6], 'green': p[6:9], 'blue': p[9:]}]
+
+def p_statement_light(p):
+    """statement: LIGHT SYMBOL NUMBER NUMBER NUMBER INT INT INT"""
+    symbols[p[2]] = ['light', {'location': p[3:6], 'color': p[6:]}]
+
+def p_statement_shading(p):
+    """statement: SHADING SHADING_TYPE"""
+    symbols['shading'] = ['shade_type', p[2]]
+
 def p_SYMBOL(p):
     """SYMBOL : XYZ
               | ID"""
