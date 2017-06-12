@@ -138,7 +138,7 @@ def run(filename):
     (lights, ambient, constants, shading) = third_pass(symbols)
 
     properties = {'lights' : lights, 'ambient': ambient, 'constants': constants, 'shading': shading}
-
+ 
     frames = second_pass(commands, num_frames)
     #print frames
     step = 0.1
