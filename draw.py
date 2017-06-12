@@ -4,8 +4,7 @@ from math import *
 from gmath import *
 import random
 
-const = [0.6, 0.6, 0.6]
-def scanline_convert(polygons, i, screen, zbuffer, color, normal, properties, k_a = const, k_d = const, k_s = const):
+def scanline_convert(polygons, i, screen, zbuffer, color, normal, properties):
     if properties['shading'] == 'flat':
         color = light(polygons, i, normal, k_a, k_d, k_s, properties, color)
 
