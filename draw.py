@@ -4,7 +4,12 @@ from math import *
 from gmath import *
 import random
 
-def scanline_convert(polygons, i, screen, zbuffer, color):
+const = [0.6, 0.6, 0.6]
+def scanline_convert(polygons, i, screen, zbuffer, color, normal, properties, k_a = const, k_d = const, k_s = const):
+
+    if properties['shading'] == 'flat':
+        color = light(polygons, i, normal, k_a, k_d, k_s, properties, color)
+
     bot = [polygons[i][j] for j in range(3)];
     mid = [polygons[i+1][j] for j in range(3)];
     top = [polygons[i+2][j] for j in range(3)];
@@ -82,7 +87,7 @@ def normalize ( v ):
     mag = magnitude(v)
     return [component / mag for component in v ]
 
-def light ( matrix, i, k_a, k_d, k_s, normal, properties, color ):
+def light ( matrix, i, normal, k_a, k_d, k_s, properties, color ):
     N = normal
     norm = normalize(normal)
 
@@ -123,19 +128,24 @@ def add_polygon( polygons, x0, y0, z0, x1, y1, z1, x2, y2, z2 ):
     add_point(polygons, x1, y1, z1);
     add_point(polygons, x2, y2, z2);
 
-def draw_polygons( matrix, screen, zbuffer, color ):
+def draw_polygons( matrix, screen, zbuffer, color , properties = None):
     if len(matrix) < 2:
         print 'Need at least 3 points to draw'
         return
 
     point = 0
+
     while point < len(matrix) - 2:
 
         normal = calculate_normal(matrix, point)[:]
         #print normal
         if normal[2] > 0:
+            
+            if (len(properties['constants']) > 0):
+                pass
+
             polygon_color = [(point * 3) % 255, (point * 11) % 255, (point * 17) % 255]
-            scanline_convert(matrix, point, screen, zbuffer, polygon_color)
+            scanline_convert(matrix, point, screen, zbuffer, polygon_color, normal, properties)
             draw_line( int(matrix[point][0]),
                        int(matrix[point][1]),
                        matrix[point][2],
