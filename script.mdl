@@ -2,7 +2,7 @@ ambient 255 255 255
 light l1 0 1 1 255 0 255
 constants white 0.25 0.5 0.25 0.25 0.5 0.25 0.25 0.5 0.25
 
-frames 100
+frames 10
 basename robot
 //set spin .1
 //BODY

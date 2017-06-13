@@ -5,58 +5,79 @@ from gmath import *
 import random
 
 def scanline_convert(polygons, i, screen, zbuffer, color, intensities, shading_type):
-    bot = [polygons[i][j] for j in range(3)];
-    mid = [polygons[i+1][j] for j in range(3)];
-    top = [polygons[i+2][j] for j in range(3)];
+    # get y values and compare them to find top, mid and bot points
+    y_vals = [polygons[i][1], polygons[i+1][1], polygons[i+2][1]]
 
-    # compare y values to determine top, mid, and bot vertices
-    if mid[1] < bot[1]:
-        bot, mid = mid, bot
-    if top[1] < bot[1]:
-        bot, top = top, bot
-    if top[1] < mid[1]:
-        mid, top = top, mid
+    b = y_vals.index(min(y_vals))
+    bot = polygons[i+b]
+    t = y_vals.index(max(y_vals))
+    top = polygons[i+t]
+    m = 3 - (t + b)
+    mid = polygons[i+m]
 
-    # get the coordinates
-    tx, ty, tz = top[0], top[1], top[2]
-    mx, my, mz = mid[0], mid[1], mid[2]
-    bx, by, bz = bot[0], bot[1], bot[2]
+    y_0 = int(bot[1])
+    y_1 = int(top[1])
+    x_0 = x_1 = int(bot[0])
+    z_0 = z_1 = bot[2]
 
-    # draw horizontal lines
-    x0 = bx
-    z0 = bz
-    if ty != by:
-        dx0 = (tx - bx) / float(ty - by)
-        dz0 = (tz - bz) / float(ty - by)
+    x0_coords = draw_line(x_0, y_0, z_0, int(top[0]), y_1, top[2], 1)[::-1] if (x_0 > int(top[0])) else draw_line(x_0, y_0, z_0, int(top[0]), y_1, top[2], 1)
+    x1_coords = draw_line(x_0, y_0, z_0, int(mid[0]), int(mid[1]), mid[2], 1)[::-1] if (x_0 > int(mid[0])) else draw_line(x_0, y_0, z_0, int(mid[0]), int(mid[1]), mid[2], 1)
+    i_0 = i_1 = 0
+    swap = True if (int(mid[0]) <= int(top[0])) and (int(mid[0]) <= int(bot[0])) else False
+    if int(mid[0]) != x_0 and int(top[0]) != x_0:
+        swap = True if (int(mid[0]) <= int(top[0])) and (int(mid[0]) >= int(bot[0])) and (float(y_1-y_0)/(int(top[0])-x_0) <= float(int(mid[1])-y_0)/(int(mid[0])-x_0)) else swap
+        swap = True if (int(bot[0]) >= int(top[0])) and (int(mid[0]) <= int(bot[0])) and (float(y_1-y_0)/(x_0-int(top[0])) >= float(int(mid[1])-y_0)/(x_0-int(mid[0]))) else swap
+
+    if shading_type == "goroud":
+        I_1 = intensities[t]
+        I_2 = intensities[b]
+        I_3 = intensities[m]
+
+        I_a = intensities[b][:]
+        I_b = intensities[b][:]
+        (y_3, y_2) = (int(mid[1]), int(bot[1]))
+
+    while y_0 < y_1:
+        if y_0 == int(mid[1]):
+            x_1 = int(mid[0])
+            z_1 = mid[2]
+            x1_coords = draw_line(x_1, y_0, z_1, int(top[0]), y_1, top[2], 1)[::-1] if (x_1 > int(top[0])) else draw_line(x_1, y_0, z_1, int(top[0]), y_1, top[2], 1)
+            i_1 = 0
+
+            if shading_type == "goroud" and int(mid[1]) != y_1:
+                 I_b = intensities[m][:]
+                 I_2 = intensities[m]
+                 I_3 = intensities[t]
+                 (y_3, y_2) = (y_1, int(mid[1]))
+
+        if shading_type == "goroud":
+            if swap:
+                draw_line( x_0, y_0, z_0, x_1, y_0, z_1, screen, zbuffer, color, I_b, I_a )
+            else:
+                draw_line( x_0, y_0, z_0, x_1, y_0, z_1, screen, zbuffer, color, I_a, I_b )
+        else:
+            draw_line( x_0, y_0, z_0, x_1, y_0, z_1, screen, zbuffer, color )
+
+        y_0 += 1
+        i_0 += 1
+        i_1 += 1
+        x_0 = x0_coords[i_0][0]
+        z_0 = x0_coords[i_0][1]
+        x_1 = x1_coords[i_1][0]
+        z_1 = x1_coords[i_1][1]
+
+        if shading_type == "goroud" and (y_0 < y_1):
+            for j in range(len(color)):
+                I_a[j] = int(round((float(y_0 - int(bot[1]))/(y_1 - int(bot[1]))) * I_1[j] + (float(y_1 - y_0)/(y_1 - int(bot[1]))) * intensities[b][j]))
+                I_b[j] = int(round((float(y_0 - y_2)/(y_3 - y_2)) * I_3[j] + (float(y_3 - y_0)/(y_3 - y_2)) * I_2[j]))
+
+    if shading_type == "goroud":
+        if swap:
+            draw_line( x_0, y_0, z_0, x_1, y_0, z_1, screen, zbuffer, color, I_b, I_1 )
+        else:
+            draw_line( x_0, y_0, z_0, x_1, y_0, z_1, screen, zbuffer, color, I_1, I_b )
     else:
-        dx0 = 0
-        dz0 = 0
-
-    x1 = bx
-    z1 = bz
-
-    dx1 = (mx - bx) / float(my - by) if my != by else 0
-    dz1 = (mz - bz) / float(my - by) if my != by else 0
-
-    for y in range(int(by), int(my)):
-        draw_line( int(x0), int(y), z0, int(x1), int(y), z1, screen, zbuffer, color)
-        x0 += dx0
-        x1 += dx1
-        z0 += dz0
-        z1 += dz1
-
-    x1 = mx
-    z1 = mz
-
-    dx1 = (tx - mx) / float(ty - my) if ty != my else 0
-    dz1 = (tz - mz) / float(ty - my) if ty != my else 0
-
-    for y in range(int(my), int(ty)):
-        draw_line( int(x0), int(y), z0, int(x1), int(y), z1, screen, zbuffer, color)
-        x0 += dx0
-        x1 += dx1
-        z0 += dz0
-        z1 += dz1
+        draw_line( x_0, y_0, z_0, x_1, y_0, z_1, screen, zbuffer, color )
 
 def add_polygon( polygons, x0, y0, z0, x1, y1, z1, x2, y2, z2 ):
     add_point(polygons, x0, y0, z0);
@@ -75,6 +96,7 @@ def draw_polygons( matrix, screen, zbuffer, color, constants = [], shading_type 
         normal = calculate_normal(matrix, point)[:]
         #print normal
         if normal[2] > 0:
+            intensities = []
             if shading_type == 'flat':
                 color = total_lighting(normal, constants, source)
 
@@ -289,8 +311,8 @@ def add_point( matrix, x, y, z=0 ):
 
 
 
-
-def draw_line( x0, y0, z0, x1, y1, z1, screen, zbuffer, color ):
+# setting = 0 to draw and 1 for scanline
+def draw_line( x0, y0, z0, x1, y1, z1, setting = 0, screen = [], zbuffer = [], color = [], I_a = [], I_b = []):
 
     #swap points if going right -> left
     if x0 > x1:
@@ -349,8 +371,21 @@ def draw_line( x0, y0, z0, x1, y1, z1, screen, zbuffer, color ):
             loop_start = y1
             loop_end = y
 
+    d_z = float(z1 - z)/distance if distance != 0 else 0
+
+    old_y = y
+    l = [[x ,z]]
+
+    if len(I_a) > 0 and len(I_b) > 0:
+        color = I_a[:]
+
     while ( loop_start < loop_end ):
-        plot( screen, zbuffer, color, x, y, z )
+        if setting == 0:
+            plot( screen, zbuffer, color, x, y, z )
+        if y != old_y:
+            l.append([x, z])
+            old_y = y
+
         if ( (wide and ((A > 0 and d > 0) or (A < 0 and d < 0))) or
              (tall and ((A > 0 and d < 0) or (A < 0 and d > 0 )))):
             x+= dx_northeast
@@ -360,6 +395,18 @@ def draw_line( x0, y0, z0, x1, y1, z1, screen, zbuffer, color ):
             x+= dx_east
             y+= dy_east
             d+= d_east
+
+        if len(I_a) > 0 and len(I_b) > 0:
+            for i in range(len(color)):
+                I = int(round((float(x - x0)/(x1 - x0)) * I_b[i] + (float(x1 - x)/(x1 - x0)) * I_a[i]))
+                color[i] = min(I, 255)
+
+        z += d_z
         loop_start+= 1
 
-    plot( screen, zbuffer, color, x, y, z )
+    if setting == 0:
+        plot( screen, zbuffer, I_b, x1, y1, z1 )
+    elif setting == 1:
+        if y!= old_y:
+            l.append([x,z])
+        return l

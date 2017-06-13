@@ -114,6 +114,7 @@ def run(filename):
 
     sources = [symbols[i][1] for i in symbols if symbols[i][0] == "light"]
 
+    shading_type = ''
     if "shading" in symbols:
         shading_type = symbols['shading'][1]
  
