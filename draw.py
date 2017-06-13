@@ -33,28 +33,24 @@ def scanline_convert(polygons, i, screen, zbuffer, color, shading_type, intensit
         I_b = intensities[b][:]
         (y_3, y_2) = (int(mid[1]), int(bot[1]))
 
-        swap = True if (int(mid[0]) <= int(top[0])) and (int(mid[0]) <= int(bot[0])) else False
-        if int(mid[0]) != x_0 and int(top[0]) != x_0:
-            swap = True if (int(mid[0]) <= int(top[0])) and (int(mid[0]) >= int(bot[0])) and (float(y_1-y_0)/(int(top[0])-x_0) <= float(int(mid[1])-y_0)/(int(mid[0])-x_0)) else swap
-            swap = True if (int(bot[0]) >= int(top[0])) and (int(mid[0]) <= int(bot[0])) and (float(y_1-y_0)/(x_0-int(top[0])) >= float(int(mid[1])-y_0)/(x_0-int(mid[0]))) else swap
-
     elif shading_type == "phong":
         N_bot = intensities[b]
         N_mid = intensities[m]
         N_top = intensities[t]
 
         if y_1 - y_0 != 0:
-            d_N_0 = [ float(N_top[0] - N_bot[0])/(y_1 - y_0), float(N_top[1] - N_bot[1])/(y_1 - y_0), float(N_top[2] - N_bot[2])/(y_1 - y_0) ]
+            d_N_0 = [ float(N_top[i] - N_bot[i])/(y_1 - y_0) for i in range(3) ]
             if int(mid[1])- y_0 != 0:
-                d_N_1 = [ float(N_mid[0] - N_bot[0])/(int(mid[1])-y_0), float(N_mid[1] - N_bot[1])/(int(mid[1])-y_0), float(N_mid[2] - N_bot[2])/(int(mid[1])-y_0) ]
+                d_N_1 = [ float(N_mid[i] - N_bot[i])/(int(mid[1]) - y_0) for i in range(3) ]
 
         N_a = N_bot[:]
         N_b = N_bot[:]
 
-        swap = True if (int(mid[0]) <= int(top[0])) and (int(mid[0]) <= int(bot[0])) else False
-        if int(mid[0]) != x_0 and int(top[0]) != x_0:
-            swap = True if (int(mid[0]) <= int(top[0])) and (int(mid[0]) >= int(bot[0])) and (float(y_1-y_0)/(int(top[0])-x_0) <= float(int(mid[1])-y_0)/(int(mid[0])-x_0)) else swap
-            swap = True if (int(bot[0]) >= int(top[0])) and (int(mid[0]) <= int(bot[0])) and (float(y_1-y_0)/(x_0-int(top[0])) >= float(int(mid[1])-y_0)/(x_0-int(mid[0]))) else swap
+    swap = True if (int(mid[0]) <= int(top[0])) and (int(mid[0]) <= int(bot[0])) else False
+    if int(mid[0]) != x_0 and int(top[0]) != x_0:
+        swap = True if (int(bot[0]) <= int(mid[0]) <= int(top[0])) and (float(y_1-y_0)/(int(top[0])-x_0) <= float(int(mid[1])-y_0)/(int(mid[0])-x_0)) else False
+        swap = True if (int(bot[0]) >= int(top[0])) and (int(mid[0]) <= int(bot[0])) and (float(y_1-y_0)/(x_0-int(top[0])) >= float(int(mid[1])-y_0)/(x_0-int(mid[0]))) else False
+
 
     while y_0 < y_1:
         if y_0 == int(mid[1]):
@@ -71,7 +67,7 @@ def scanline_convert(polygons, i, screen, zbuffer, color, shading_type, intensit
                               )
 
             elif shading_type == "phong" and int(mid[1]) != y_1:
-                d_N_1 = [ float(N_top[0] - N_mid[0])/(y_1 - int(mid[1])), float(N_top[1] - N_mid[1])/(y_1 - int(mid[1])), float(N_top[2] - N_mid[2])/(y_1 - int(mid[1])) ]
+                d_N_1 = [ float(N_top[i] - N_mid[i])/(y_1 - int(mid[1])) for i in range(3)]
                 N_b = N_mid[:]
 
         if shading_type == "goroud":
@@ -424,8 +420,6 @@ def draw_line( x0, y0, z0, x1, y1, z1, screen, zbuffer, color, setting = 0, left
         color = left[:]
 
     elif shading_type == "phong":
-        # print A
-        # print B
         color = total_lighting(left, constants, sources)
         if distance != 0:
             d_N = [ float(right[0] - left[0])/(distance), float(right[1] - left[1])/(distance), float(right[2] - left[2])/(distance) ]
@@ -452,7 +446,7 @@ def draw_line( x0, y0, z0, x1, y1, z1, screen, zbuffer, color, setting = 0, left
         if shading_type == "goroud":
             for i in range(len(color)):
                 I = int(round((float(x - x0)/(x1 - x0)) * right[i] + (float(x1 - x)/(x1 - x0)) * left[i]))
-                color[i] = I if I <= 255 else 255
+                color[i] = min(I, 255)
         elif shading_type == "phong":
             for i in range(len(color)):
                 N[i] += d_N[i]
